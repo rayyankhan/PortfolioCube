@@ -67,3 +67,60 @@ function init() {
                     child.material = material;
                 }
             });
+            
+            // Scale the object appropriately (adjust as needed)
+            gltf.scene.scale.set(2, 2, 2); 
+            
+            // Add the loaded object to our container
+            modelContainer.add(gltf.scene);
+        },
+        function (xhr) {
+            console.log((xhr.loaded / xhr.total * 100) + '% loaded'); // Progress logging
+        },
+        function (error) {
+            console.error('An error occurred while loading the GLTF model:', error); // Error handling
+        }
+    );
+    
+    let targetX = 0;
+    let targetY = 0;
+    
+    // Animation loop
+    function animate() {
+        requestAnimationFrame(animate);
+
+        // Smoothly interpolate current position toward target position (cursor-following behavior)
+        modelContainer.position.x += (targetX - modelContainer.position.x) * 0.1;
+        modelContainer.position.y += (targetY - modelContainer.position.y) * 0.1;
+
+        // Add rotation for extra visual interest
+        modelContainer.rotation.x += 0.005;
+        modelContainer.rotation.y += 0.005;
+
+        // Animate rim light for dynamic effect
+        const time = Date.now() * 0.001;
+        rimLight.position.x = Math.sin(time) * 7;
+        rimLight.position.y = Math.cos(time) * 7;
+        rimLight.position.z = -7 + Math.sin(time * 0.5) * 2;
+
+        renderer.render(scene, camera);
+    }
+
+    // Handle window resizing to maintain aspect ratio and responsiveness
+    window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    // Add mouse interactivity - object follows cursor movement
+    document.addEventListener('mousemove', (event) => {
+        targetX = (event.clientX / window.innerWidth) * 4 - 2;
+        targetY = -(event.clientY / window.innerHeight) * 4 + 2;
+    });
+
+    animate(); // Start animation loop
+}
+
+// Run the init function when the window loads
+window.onload = init;
