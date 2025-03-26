@@ -1,5 +1,6 @@
-// Import Three.js from CDN
+// Import Three.js and GLTFLoader from CDN
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.module.js';
+import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.128.0/examples/jsm/loaders/GLTFLoader.js';
 
 // Main function to initialize and run the WebGL effect
 function init() {
@@ -12,6 +13,8 @@ function init() {
     
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.outputEncoding = THREE.sRGBEncoding; // Important for GLTF
+    renderer.physicallyCorrectLights = true; // Better lighting for GLTF
     document.getElementById('webgl-container').appendChild(renderer.domElement);
     
     // Add lighting
@@ -33,7 +36,7 @@ function init() {
     
     // Add rim light - positioned behind the object to create edge highlighting
     const rimLight = new THREE.PointLight(0xffffff, 1.5, 100);
-    rimLight.position.set(0, 0, -7); // Behind the cube
+    rimLight.position.set(0, 0, -7); // Behind the object
     scene.add(rimLight);
     
     // Create iridescent material
@@ -49,57 +52,38 @@ function init() {
         iridescenceThicknessRange: [100, 400]
     });
     
-    // Create beveled cube using BoxGeometry with more segments and chamfered edges
-    // Instead of a basic BoxGeometry, we'll use a more complex approach for beveled edges
-    const boxWidth = 2;
-    const boxHeight = 2;
-    const boxDepth = 2;
-    const bevelSize = 0.2; // Size of the beveled edge
+    // Create a container for our object
+    const modelContainer = new THREE.Group();
+    scene.add(modelContainer);
     
-    // Create a basic box shape
-    const boxGeometry = new THREE.BoxGeometry(
-        boxWidth - bevelSize*2, 
-        boxHeight - bevelSize*2, 
-        boxDepth - bevelSize*2
+    // Load GLTF model
+    // You can replace this URL with the path to your own GLTF file
+    const gltfLoader = new GLTFLoader();
+    gltfLoader.load(
+        'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Cube/glTF/Cube.gltf',
+        function(gltf) {
+            // Apply material to all meshes in the GLTF
+            gltf.scene.traverse(function(child) {
+                if (child instanceof THREE.Mesh) {
+                    child.material = material;
+                }
+            });
+            
+            // Scale the object appropriately
+            gltf.scene.scale.set(2, 2, 2); // Adjust scale as needed
+            
+            // Add the loaded object to our container
+            modelContainer.add(gltf.scene);
+        },
+        // onProgress callback
+        function(xhr) {
+            console.log((xhr.loaded / xhr.total * 100) + '% loaded');
+        },
+        // onError callback
+        function(error) {
+            console.error('An error happened', error);
+        }
     );
-    
-    // Convert BoxGeometry to BufferGeometry
-    const geometry = new THREE.BufferGeometry();
-    geometry.setAttribute('position', boxGeometry.getAttribute('position'));
-    geometry.setAttribute('normal', boxGeometry.getAttribute('normal'));
-    geometry.setAttribute('uv', boxGeometry.getAttribute('uv'));
-    geometry.setIndex(boxGeometry.getIndex());
-    
-    // Create a sphere for rounded corners
-    const sphereGeometry = new THREE.SphereGeometry(bevelSize, 8, 8);
-    const edgePositions = [
-        // Corners (8 positions)
-        [1, 1, 1], [1, 1, -1], [1, -1, 1], [1, -1, -1],
-        [-1, 1, 1], [-1, 1, -1], [-1, -1, 1], [-1, -1, -1]
-    ];
-    
-    // Create a cube with beveled edges by merging geometries
-    const finalGeometry = new THREE.BufferGeometry();
-    const meshes = [];
-    
-    // Add the main box
-    meshes.push(new THREE.Mesh(geometry, material));
-    
-    // Add spheres at corners for rounded edges
-    edgePositions.forEach(pos => {
-        const sphere = new THREE.Mesh(sphereGeometry, material);
-        sphere.position.set(
-            pos[0] * (boxWidth/2 - bevelSize),
-            pos[1] * (boxHeight/2 - bevelSize),
-            pos[2] * (boxDepth/2 - bevelSize)
-        );
-        meshes.push(sphere);
-    });
-    
-    // Create the final beveled cube
-    const cube = new THREE.Group();
-    meshes.forEach(mesh => cube.add(mesh));
-    scene.add(cube);
     
     // Default position
     let targetX = 0;
@@ -110,12 +94,12 @@ function init() {
         requestAnimationFrame(animate);
         
         // Smoothly interpolate current position toward target position
-        cube.position.x += (targetX - cube.position.x) * 0.1;
-        cube.position.y += (targetY - cube.position.y) * 0.1;
+        modelContainer.position.x += (targetX - modelContainer.position.x) * 0.1;
+        modelContainer.position.y += (targetY - modelContainer.position.y) * 0.1;
         
         // Add some gentle rotation for extra visual interest
-        cube.rotation.x += 0.005;
-        cube.rotation.y += 0.005;
+        modelContainer.rotation.x += 0.005;
+        modelContainer.rotation.y += 0.005;
         
         // Animate rim light for more dynamic effect
         const time = Date.now() * 0.001;
@@ -133,7 +117,7 @@ function init() {
         renderer.setSize(window.innerWidth, window.innerHeight);
     });
     
-    // Add mouse interactivity - cube follows cursor
+    // Add mouse interactivity - object follows cursor
     document.addEventListener('mousemove', (event) => {
         // Convert mouse position to 3D coordinates
         targetX = (event.clientX / window.innerWidth) * 4 - 2;
