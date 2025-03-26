@@ -1,6 +1,5 @@
-// Import Three.js, GLTFLoader, and RGBELoader from CDN
+// Import Three.js and EXRLoader from CDN
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.module.js';
-import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.128.0/examples/jsm/loaders/GLTFLoader.js';
 import { EXRLoader } from 'https://cdn.jsdelivr.net/npm/three@0.128.0/examples/jsm/loaders/EXRLoader.js';
 
 // Main function to initialize and run the WebGL effect
@@ -50,35 +49,12 @@ function init() {
         iridescenceThicknessRange: [100, 400]
     });
     
-    // Create a container for our object (model)
-    const modelContainer = new THREE.Group();
-    scene.add(modelContainer);
+    // Create a default cube geometry
+    const geometry = new THREE.BoxGeometry(2, 2, 2); // Cube with dimensions 2x2x2
+    const cube = new THREE.Mesh(geometry, material);
     
-    // Load GLTF model from your repository using jsDelivr
-    const gltfLoader = new GLTFLoader();
-    gltfLoader.load(
-        'https://cdn.jsdelivr.net/gh/rayyankhan/PortfolioCube@main/Cube_1.gltf', // Correct URL for Cube_1.gltf
-        function (gltf) {
-            // Apply the iridescent material to all meshes in the GLTF model
-            gltf.scene.traverse(function (child) {
-                if (child instanceof THREE.Mesh) {
-                    child.material = material;
-                }
-            });
-            
-            // Scale the object appropriately (adjust as needed)
-            gltf.scene.scale.set(2, 2, 2); 
-            
-            // Add the loaded object to our container
-            modelContainer.add(gltf.scene);
-        },
-        function (xhr) {
-            console.log((xhr.loaded / xhr.total * 100) + '% loaded'); // Progress logging
-        },
-        function (error) {
-            console.error('An error occurred while loading the GLTF model:', error); // Error handling
-        }
-    );
+    // Add the cube to the scene
+    scene.add(cube);
     
     let targetX = 0;
     let targetY = 0;
@@ -87,11 +63,11 @@ function init() {
     function animate() {
         requestAnimationFrame(animate);
 
-        modelContainer.position.x += (targetX - modelContainer.position.x) * 0.1;
-        modelContainer.position.y += (targetY - modelContainer.position.y) * 0.1;
+        cube.position.x += (targetX - cube.position.x) * 0.1;
+        cube.position.y += (targetY - cube.position.y) * 0.1;
 
-        modelContainer.rotation.x += 0.005;
-        modelContainer.rotation.y += 0.005;
+        cube.rotation.x += 0.005;
+        cube.rotation.y += 0.005;
 
         const time = Date.now() * 0.001;
         rimLight.position.x = Math.sin(time) * 7;
