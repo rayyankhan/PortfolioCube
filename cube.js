@@ -1,6 +1,7 @@
-// Import Three.js and GLTFLoader from CDN
+// Import Three.js, GLTFLoader, and RGBELoader from CDN
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.module.js';
 import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.128.0/examples/jsm/loaders/GLTFLoader.js';
+import { EXRLoader } from 'https://cdn.jsdelivr.net/npm/three@0.128.0/examples/jsm/loaders/EXRLoader.js';
 
 // Main function to initialize and run the WebGL effect
 function init() {
@@ -13,26 +14,23 @@ function init() {
     
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.outputEncoding = THREE.sRGBEncoding; // Important for GLTF
-    renderer.physicallyCorrectLights = true; // Better lighting for GLTF
+    renderer.outputEncoding = THREE.sRGBEncoding; // Important for proper color rendering
+    renderer.physicallyCorrectLights = true; // Better lighting calculations
     document.getElementById('webgl-container').appendChild(renderer.domElement);
     
-    // Add lighting
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.5); // Soft ambient light
-    scene.add(ambientLight);
-    
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 1); // Directional light for highlights
-    directionalLight.position.set(5, 5, 5);
-    scene.add(directionalLight);
-    
-    // Add colored point lights for iridescence effect
-    const pointLight = new THREE.PointLight(0xff00ff, 1, 100); // Pink light
-    pointLight.position.set(5, 5, 5);
-    scene.add(pointLight);
-    
-    const pointLight2 = new THREE.PointLight(0x00ffff, 1, 100); // Cyan light
-    pointLight2.position.set(-5, -5, 5);
-    scene.add(pointLight2);
+    // Load HDRI environment map for lighting using EXRLoader
+    const exrLoader = new EXRLoader();
+    exrLoader.load(
+        'https://cdn.jsdelivr.net/gh/rayyankhan/PortfolioCube@main/studio_small_09_2k.exr', // HDRI file URL
+        function (texture) {
+            texture.mapping = THREE.EquirectangularReflectionMapping; // Set texture mapping type
+            scene.environment = texture; // Apply the HDRI as the environment map
+        },
+        undefined,
+        function (error) {
+            console.error('Error loading HDRI:', error);
+        }
+    );
     
     // Add rim light - positioned behind the object to create edge highlighting
     const rimLight = new THREE.PointLight(0xffffff, 1.5, 100); // White rim light
@@ -89,15 +87,12 @@ function init() {
     function animate() {
         requestAnimationFrame(animate);
 
-        // Smoothly interpolate current position toward target position (cursor-following behavior)
         modelContainer.position.x += (targetX - modelContainer.position.x) * 0.1;
         modelContainer.position.y += (targetY - modelContainer.position.y) * 0.1;
 
-        // Add rotation for extra visual interest
         modelContainer.rotation.x += 0.005;
         modelContainer.rotation.y += 0.005;
 
-        // Animate rim light for dynamic effect
         const time = Date.now() * 0.001;
         rimLight.position.x = Math.sin(time) * 7;
         rimLight.position.y = Math.cos(time) * 7;
@@ -106,14 +101,12 @@ function init() {
         renderer.render(scene, camera);
     }
 
-    // Handle window resizing to maintain aspect ratio and responsiveness
     window.addEventListener('resize', () => {
         camera.aspect = window.innerWidth / window.innerHeight;
         camera.updateProjectionMatrix();
         renderer.setSize(window.innerWidth, window.innerHeight);
     });
 
-    // Add mouse interactivity - object follows cursor movement
     document.addEventListener('mousemove', (event) => {
         targetX = (event.clientX / window.innerWidth) * 4 - 2;
         targetY = -(event.clientY / window.innerHeight) * 4 + 2;
