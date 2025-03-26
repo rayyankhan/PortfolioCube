@@ -56,11 +56,10 @@ function init() {
     const modelContainer = new THREE.Group();
     scene.add(modelContainer);
     
-    // Load GLTF model
-    // You can replace this URL with the path to your own GLTF file
+    // Load GLTF model from your repository using jsDelivr
     const gltfLoader = new GLTFLoader();
     gltfLoader.load(
-        'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Cube/glTF/Cube.gltf',
+        'https://cdn.jsdelivr.net/gh/rayyankhan/PortfolioCube@main/Cube_1.gltf',
         function(gltf) {
             // Apply material to all meshes in the GLTF
             gltf.scene.traverse(function(child) {
